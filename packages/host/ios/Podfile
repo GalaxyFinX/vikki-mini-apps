@@ -1,6 +1,7 @@
 require_relative '../node_modules/super-app-showcase-sdk/ios/react_native_setup.rb'
+$min_ios_version_supported = 15.5
 
-platform :ios, min_ios_version_supported
+platform :ios, $min_ios_version_supported
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -9,8 +10,12 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
+ENV["RCT_NEW_ARCH_ENABLED"] = "0"
+
 target 'host' do
   config = use_native_modules!
+  pod 'GoogleUtilities', :modular_headers => true;
+
 
   use_react_native!(
     # An absolute path to your application root.
@@ -33,5 +38,44 @@ target 'host' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+  end
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false
+    )
+    __apply_Xcode_14_3_RC_post_install_workaround(installer)
+
+    installer.generated_projects.each do |project|
+      project.targets.each do |target|
+          target.build_configurations.each do |config|
+              config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"
+              config.build_settings["DEVELOPMENT_TEAM"] = "XT5ZUJ9J6J"
+              config.build_settings["ENABLE_USER_SCRIPT_SANDBOXING"] = "NO"
+           end
+           if target.name == 'SwiftyRSA'
+            target.build_configurations.each do |config|
+              config.build_settings['EXCLUDED_SOURCE_FILE_NAMES'] = 'SwiftyRSA+ObjC.swift'
+            end
+          end
+      end
+    end
+    bitcode_strip_path = `xcrun --find bitcode_strip`.chop!
+       def strip_bitcode_from_framework(bitcode_strip_path, framework_relative_path)
+         framework_path = File.join(Dir.pwd, framework_relative_path)
+         command = "#{bitcode_strip_path} #{framework_path} -r -o #{framework_path}"
+         puts "Stripping bitcode: #{command}"
+         system(command)
+       end
+
+       framework_paths = [
+         "Pods/OpenSSL-Universal/Frameworks/OpenSSL.xcframework/ios-arm64/OpenSSL.framework/OpenSSL"
+       ]
+
+       framework_paths.each do |framework_relative_path|
+         strip_bitcode_from_framework(bitcode_strip_path, framework_relative_path)
+     end
   end
 end

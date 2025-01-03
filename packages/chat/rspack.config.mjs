@@ -3,7 +3,7 @@ import path from 'node:path';
 import * as Repack from '@callstack/repack';
 import rspack from '@rspack/core';
 import {getSharedDependencies} from 'super-app-showcase-sdk';
-
+import EmbedFilePlugin from './EmbeddedPermissionPlugin.js';
 const dirname = Repack.getDirname(import.meta.url);
 const {resolve} = createRequire(import.meta.url);
 
@@ -97,10 +97,48 @@ export default env => {
     },
     module: {
       rules: [
-        Repack.REACT_NATIVE_LOADING_RULES,
-        Repack.NODE_MODULES_LOADING_RULES,
-        Repack.FLOW_TYPED_MODULES_LOADING_RULES,
+        // Repack.REACT_NATIVE_LOADING_RULES,
+        // Repack.NODE_MODULES_LOADING_RULES,
+        // Repack.FLOW_TYPED_MODULES_LOADING_RULES,
         /** Here you can adjust loader that will process your files. */
+        {
+          test: /\.[cm]?[jt]sx?$/,
+          include: [
+            /node_modules(.*[/\\])+react-native/,
+            /node_modules(.*[/\\])+@react-native/,
+            /node_modules(.*[/\\])+@react-navigation/,
+            /node_modules(.*[/\\])+@react-native-community/,
+            /node_modules(.*[/\\])+expo/,
+            /node_modules(.*[/\\])+pretty-format/,
+            /node_modules(.*[/\\])+metro/,
+            /node_modules(.*[/\\])+abort-controller/,
+            /node_modules(.*[/\\])+@callstack[/\\]repack/,
+            /node_modules(.*[/\\])+@google-cloud/,
+            /node_modules(.*[/\\])+@gorhom/,
+            /node_modules(.*[/\\])+@sentry/,
+            /node_modules(.*[/\\])+@native-html/,
+            /node_modules(.*[/\\])+react-freeze/,
+            /node_modules(.*[/\\])+rn-android-keyboard-adjust/,
+            /node_modules(.*[/\\])+semver/,
+            /node_modules(.*[/\\])+yup/,
+            /node_modules(.*[/\\])+@galaxyfinx\/vietnam-qrpay-info/,
+            /node_modules(.*[/\\])+react-native-safe-area-context/,
+            /node_modules(.*[/\\])+xstate/,
+            /node_modules(.*[/\\])+axios/,
+            /node_modules(.*[/\\])+drange/,
+            /node_modules(.*[/\\])+@module-federation/,
+            /node_modules(.*[/\\])+isomorphic-rslog/,
+            /node_modules(.*[/\\])+immer/,
+            /node_modules(.*[/\\])+react-i18next/,
+            /node_modules(.*[/\\])+@reduxjs/,
+            /node_modules(.*[/\\])+redux-persist/,
+            /node_modules(.*[/\\])+redux/,
+            /node_modules(.*[/\\])+lottie-react-native/,
+          ],
+          use: 'babel-loader',
+          type: 'javascript/dynamic',
+        },
+
         {
           test: /\.[jt]sx?$/,
           exclude: [/node_modules/],
@@ -128,7 +166,7 @@ export default env => {
           },
         },
         /** Run React Native codegen, required for utilizing new architecture */
-        Repack.REACT_NATIVE_CODEGEN_RULES,
+        // Repack.REACT_NATIVE_CODEGEN_RULES,
         /**
          * This loader handles all static assets (images, video, audio and others), so that you can
          * use (reference) them inside your application.
@@ -187,6 +225,7 @@ export default env => {
          */
         exposes: {
           './App': './src/navigation/MainNavigator',
+          './ChatScreen': './src/screens/ChatScreen',
         },
         remotes: {
           auth: `auth@http://localhost:9003/${platform}/mf-manifest.json`,
@@ -198,9 +237,11 @@ export default env => {
          */
         shared: getSharedDependencies({eager: false}),
       }),
+      new EmbedFilePlugin({filePath: './permission.service.json'}),
+
       new Repack.plugins.CodeSigningPlugin({
         enabled: mode === 'production',
-        privateKeyPath: path.join('..', '..', 'code-signing.pem'),
+        privateKeyPath: path.join('code-signing.pem'),
       }),
       // silence missing @react-native-masked-view optionally required by @react-navigation/elements
       new rspack.IgnorePlugin({

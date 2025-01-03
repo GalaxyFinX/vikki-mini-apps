@@ -15,3 +15,4 @@ code-signing.pem.pub
 
 # mprocs
 mprocs.log
+.npmrc

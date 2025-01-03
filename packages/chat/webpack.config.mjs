@@ -216,6 +216,7 @@ export default env => {
          */
         exposes: {
           './App': './src/navigation/MainNavigator',
+          './ChatScreen': './src/screens/ChatScreen',
         },
         remotes: {
           auth: `auth@http://localhost:9003/${platform}/mf-manifest.json`,
@@ -229,7 +230,7 @@ export default env => {
       }),
       new Repack.plugins.CodeSigningPlugin({
         enabled: mode === 'production',
-        privateKeyPath: path.join('..', '..', 'code-signing.pem'),
+        privateKeyPath: path.join('code-signing.pem'),
       }),
       // silence missing @react-native-masked-view optionally required by @react-navigation/elements
       new webpack.IgnorePlugin({
